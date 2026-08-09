@@ -22,9 +22,9 @@ services:
     ports:
       - "8080:8000"
     environment:
-
-      DATABASE_URL: 
-      SECRET_KEY: 
+      DATABASE_URL: mysql://root:root@db:3306/vortex_db
+      SECRET_KEY: change-me-in-production
+      DEBUG: "0"
     depends_on:
       db:
         condition: service_healthy

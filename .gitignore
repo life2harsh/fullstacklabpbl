@@ -6,6 +6,7 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
 ENV/
 build/
 develop-eggs/
@@ -36,6 +37,8 @@ wheels/
 uploads/
 private_uploads/
 backend/uploads/
+media/
+staticfiles/
 
 # IDE
 .vscode/
@@ -82,6 +85,3 @@ static/legacy-noir/
 
 # Deployment artifacts
 deploy.tar.gz
-
-# Local README (not needed on remote)
-README.md

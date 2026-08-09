@@ -15,4 +15,6 @@ COPY . .
 
 RUN mkdir -p uploads/avatars uploads/posts uploads/messages
 
-CMD ["uvicorn", "backend.backapi:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--timeout-keep-alive", "120", "--limit-concurrency", "2000", "--backlog", "4096"]
+RUN python manage.py collectstatic --noinput
+
+CMD ["sh", "-c", "python manage.py migrate && gunicorn vortex.wsgi:application --bind 0.0.0.0:8000 --workers 2"]
