@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Activity Reports | Vortex{% endblock %}
+{% block content %}
+<main class="main-content" style="max-width:760px;margin:3rem auto;padding:2rem;">
+    <h1>Activity reports</h1>
+    <p>Download your real Vortex activity as portable CSV or PDF reports.</p>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
+        <a class="btn-primary" href="{% url 'activity-csv' %}">Download CSV</a>
+        <a class="btn-primary" href="{% url 'activity-pdf' %}">Download PDF report</a>
+        <a class="btn-secondary" href="{% url 'feed' %}">Back to feed</a>
+    </div>
+</main>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Moderation | Vortex{% endblock %}
+{% block content %}
+<main class="main-content" style="max-width:1000px;margin:2rem auto;padding:2rem;">
+    <h1>Moderation queue</h1>
+    <p>Review reports from the Django Admin or this staff-only queue.</p>
+    <div class="feed-container">
+    {% for report in reports %}
+        <article class="post-card"><strong>{{ report.get_report_type_display }}</strong> · {{ report.reason }}<br><small>Reported by {{ report.reporter.username }} · {{ report.created_at }}</small><p>{{ report.details }}</p></article>
+    {% empty %}<p class="empty-state">No reports to review.</p>{% endfor %}
+    </div>
+</main>
+{% endblock %}
