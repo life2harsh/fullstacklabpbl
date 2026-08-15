@@ -4,6 +4,10 @@
 <main class="main-content" style="max-width:760px;margin:3rem auto;padding:2rem;">
     <h1>Activity reports</h1>
     <p>Download your real Vortex activity as portable CSV or PDF reports.</p>
+    <form method="get" style="margin-top:1.5rem;max-width:360px;">
+        {{ form.as_p }}
+        <button class="btn-secondary" type="submit">Apply report options</button>
+    </form>
     <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
         <a class="btn-primary" href="{% url 'activity-csv' %}">Download CSV</a>
         <a class="btn-primary" href="{% url 'activity-pdf' %}">Download PDF report</a>
