@@ -1,7 +1,9 @@
 import json
+from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
+from django.utils import timezone
 
 from accounts.models import Follow
 from interactions.models import Like
@@ -72,9 +74,18 @@ class VortexWorkflowTests(TestCase):
 
     def test_reports_and_relationships(self):
         self.login()
-        post = Post.objects.create(author=self.user, title="Report me", content="Exportable")
-        self.assertEqual(self.client.get("/reports/activity.csv").status_code, 200)
-        self.assertIn("text/csv", self.client.get("/reports/activity.csv")["Content-Type"])
+        post = Post.objects.create(author=self.user, title="Recent report", content="Exportable")
+        old_post = Post.objects.create(author=self.user, title="Old report", content="Outside range")
+        old_post.created_at = timezone.now() - timedelta(days=60)
+        old_post.save(update_fields=["created_at"])
+        csv_response = self.client.get("/reports/activity.csv?days=30&include_comments=on")
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertIn("text/csv", csv_response["Content-Type"])
+        self.assertIn("Recent report", csv_response.content.decode())
+        self.assertNotIn("Old report", csv_response.content.decode())
+        self.assertIn("Comments", csv_response.content.decode().splitlines()[0])
+        filtered_csv = self.client.get("/reports/activity.csv?days=30")
+        self.assertNotIn("Comments", filtered_csv.content.decode().splitlines()[0])
         pdf = self.client.get("/reports/activity.pdf")
         self.assertEqual(pdf.status_code, 200)
         self.assertEqual(pdf["Content-Type"], "application/pdf")
@@ -82,3 +93,9 @@ class VortexWorkflowTests(TestCase):
         ConversationParticipant.objects.create(conversation=conversation, user=self.user)
         ConversationParticipant.objects.create(conversation=conversation, user=self.other)
         self.assertEqual(conversation.participants.count(), 2)
+
+    def test_logout_clears_django_session(self):
+        self.login()
+        response = self.client.post("/logout")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get("/feed/").status_code, 302)

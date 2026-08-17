@@ -37,6 +37,7 @@
                 <span>Alerts</span>
                 <span class="notification-badge" id="notif-badge" style="display: none;">0</span>
             </a>
+            <a href="/reports/activity/" class="nav-item"><span>Activity Report</span></a>
         </nav>
 
         <div class="sidebar-footer">
@@ -110,8 +111,6 @@
     </div>
 
     <script>
-        const API_URL = '';
-        const token = localStorage.getItem('accessToken') || ''; 
         let currentUser = null;
         let currentPost = null;
 
@@ -124,8 +123,7 @@
 
         async function loadUserInfo() {
             try {
-                const response = await fetch(`${API_URL}/users/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/users/me`, {
                 });
                 currentUser = await response.json();
 
@@ -133,7 +131,7 @@
                 const sidebarAvatar = document.getElementById('sidebar-avatar');
 
                 if (currentUser.avatar_url) {
-                    sidebarAvatar.innerHTML = `<img src="${API_URL}${currentUser.avatar_url}" alt="${currentUser.username}">`;
+                    sidebarAvatar.innerHTML = `<img src="${currentUser.avatar_url}" alt="${currentUser.username}">`;
                 } else {
                     sidebarAvatar.innerHTML = `<span id="sidebar-initial">${initial}</span>`;
                 }
@@ -141,15 +139,13 @@
                 document.getElementById('sidebar-username').textContent = currentUser.username;
             } catch (error) {
                 console.error('Error loading user:', error);
-                localStorage.removeItem('accessToken');
                 window.location.href = '/';
             }
         }
 
         async function loadPost() {
             try {
-                const response = await fetch(`${API_URL}/posts/${postId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/posts/${postId}`, {
                 });
 
                 if (!response.ok) throw new Error('Post not found');
@@ -176,12 +172,12 @@
                 <div class="post-header" style="display: flex; align-items: center; justify-content: space-between;">
                     <div class="post-author">
                         <div class="avatar small">
-                            ${post.author_avatar_url 
-                                ? `<img src="${API_URL}${post.author_avatar_url}" alt="Avatar">` 
+                            ${post.author_avatar_url
+                                ? `<img src="${post.author_avatar_url}" alt="Avatar">`
                                 : `<span>${post.author_username.charAt(0).toUpperCase()}</span>`}
                         </div>
                         <div class="author-info">
-                            <a href='/public-profile/?id=${post.user_id}" class="author-name">${escapeHtml(post.author_username)}</a>
+                            <a href="/public-profile/?id=${post.user_id}" class="author-name">${escapeHtml(post.author_username)}</a>
                             <span class="post-date">${formatDate(post.created_at)}</span>
                         </div>
                     </div>
@@ -199,9 +195,9 @@
                     <h2 style="font-size: 1.5rem; font-weight: 600; color: var(--noir-white); margin-bottom: 1rem;">${escapeHtml(post.title)}</h2>
                     <p style="font-size: 0.9375rem; line-height: 1.6; color: var(--noir-text); margin-bottom: 1.5rem; white-space: pre-wrap;">${escapeHtml(post.content)}</p>
                     ${post.media_url ? `
-                        ${isVideo(post.media_url) 
-                            ? `<video controls style="width: 100%; border-radius: 12px; margin-bottom: 1.5rem;"><source src="${API_URL}${post.media_url}" type="video/mp4"></video>`
-                            : `<img src="${API_URL}${post.media_url}" style="width: 100%; border-radius: 12px; margin-bottom: 1.5rem;">`
+                        ${isVideo(post.media_url)
+                            ? `<video controls style="width: 100%; border-radius: 12px; margin-bottom: 1.5rem;"><source src="${post.media_url}" type="video/mp4"></video>`
+                            : `<img src="${post.media_url}" style="width: 100%; border-radius: 12px; margin-bottom: 1.5rem;">`
                         }
                     ` : ''}
                     <div class="post-actions">
@@ -224,8 +220,7 @@
 
         async function loadComments() {
             try {
-                const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/posts/${postId}/comments`, {
                 });
                 const comments = await response.json();
                 displayComments(comments);
@@ -248,14 +243,14 @@
                     <div class="comment-item" style="padding: 1.5rem; background: var(--noir-dark); border: 1px solid var(--border-subtle); border-radius: 12px; margin-bottom: 1rem;">
                         <div style="display: flex; align-items: flex-start; gap: 1rem;">
                             <div class="avatar small">
-                                ${comment.author_avatar_url 
-                                    ? `<img src="${API_URL}${comment.author_avatar_url}" alt="Avatar">` 
+                                ${comment.author_avatar_url
+                                    ? `<img src="${comment.author_avatar_url}" alt="Avatar">`
                                     : `<span>${comment.author_username.charAt(0).toUpperCase()}</span>`}
                             </div>
                             <div style="flex: 1;">
                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
                                     <div>
-                                        <a href='/public-profile/?id=${comment.user_id}" style="font-weight: 500; color: var(--noir-white); text-decoration: none;">${escapeHtml(comment.author_username)}</a>
+                                        <a href="/public-profile/?id=${comment.user_id}" style="font-weight: 500; color: var(--noir-white); text-decoration: none;">${escapeHtml(comment.author_username)}</a>
                                         <span style="color: var(--noir-muted); font-size: 0.875rem; margin-left: 0.5rem;">${formatDate(comment.created_at)}</span>
                                     </div>
                                     ${isOwner ? `
@@ -277,10 +272,9 @@
             if (!content) return;
 
             try {
-                const response = await fetch(`${API_URL}/posts/${postId}/comments`, {
+                const response = await fetch(`/posts/${postId}/comments`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ content })
@@ -296,7 +290,7 @@
                     commentCountEl.textContent = currentPost.comment_count;
                 }
 
-                loadComments(); 
+                loadComments();
             } catch (error) {
                 console.error('Error posting comment:', error);
             }
@@ -307,9 +301,8 @@
                 const isLiked = currentPost.is_liked;
                 const method = isLiked ? 'DELETE' : 'POST';
 
-                const response = await fetch(`${API_URL}/posts/${postId}/like`, {
+                const response = await fetch(`/posts/${postId}/like`, {
                     method: method,
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (!response.ok) throw new Error('Failed to toggle like');
@@ -383,9 +376,8 @@
             if (!confirmed) return;
 
             try {
-                const response = await fetch(`${API_URL}/posts/${postId}`, {
+                const response = await fetch(`/posts/${postId}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (!response.ok) throw new Error('Failed to delete post');
@@ -401,9 +393,8 @@
             if (!confirmed) return;
 
             try {
-                const response = await fetch(`${API_URL}/comments/${commentId}`, {
+                const response = await fetch(`/comments/${commentId}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (!response.ok) throw new Error('Failed to delete comment');
@@ -414,7 +405,7 @@
                     commentCountEl.textContent = currentPost.comment_count;
                 }
 
-                loadComments(); 
+                loadComments();
             } catch (error) {
                 console.error('Error deleting comment:', error);
             }
@@ -448,15 +439,14 @@
             return div.innerHTML;
         }
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('accessToken');
-            window.location.href = '/';
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            const response = await fetch('/logout', { method: 'POST' });
+            if (response.ok) window.location.href = '/';
         });
 
         async function updateBadges() {
             try {
-                const notifResponse = await fetch(`${API_URL}/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const notifResponse = await fetch(`/notifications`, {
                 });
                 const notifications = await notifResponse.json();
                 const unreadCount = notifications.filter(n => !n.read_status).length;
@@ -468,14 +458,13 @@
                     notifBadge.style.display = 'none';
                 }
 
-                const convResponse = await fetch(`${API_URL}/messages/conversations`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const convResponse = await fetch(`/messages/conversations`, {
                 });
                 const conversations = await convResponse.json();
                 const unreadInboxes = new Set();
                 conversations.forEach(conv => {
                     if (conv.unread_count && conv.unread_count > 0) {
-                        unreadInboxes.add(conv.user_id);
+                        unreadInboxes.add(conv.other_user_id);
                     }
                 });
                 const messageBadge = document.getElementById('message-badge');

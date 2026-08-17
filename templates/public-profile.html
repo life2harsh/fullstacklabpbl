@@ -36,6 +36,7 @@
                 <span>Alerts</span>
                 <span class="notification-badge" id="notif-badge" style="display: none;">0</span>
             </a>
+            <a href="/reports/activity/" class="nav-item"><span>Activity Report</span></a>
         </nav>
 
         <div class="sidebar-footer">
@@ -76,8 +77,6 @@
     </main>
 
     <script>
-        const API_URL = '';
-        const token = localStorage.getItem('accessToken') || ''; 
         const urlParams = new URLSearchParams(window.location.search);
         const userId = urlParams.get('id');
         let currentUser = null;
@@ -85,8 +84,7 @@
         if (!userId) window.location.href = '/feed/';
 
         async function loadCurrentUser() {
-            const resp = await fetch(`${API_URL}/users/me`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const resp = await fetch(`/users/me`, {
             });
             if (!resp.ok) throw new Error('Failed to load current user');
             currentUser = await resp.json();
@@ -98,10 +96,9 @@
                     await loadCurrentUser();
                 }
 
-                const response = await fetch(`${API_URL}/users/${userId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/users/${userId}`, {
                 });
-                
+
                 if (!response.ok) {
                     window.location.href = '/feed/';
                     return;
@@ -113,7 +110,7 @@
                 document.getElementById('profile-email').textContent = user.full_name || '';
 
                 if (user.avatar_url) {
-                    document.getElementById('profile-avatar').src = `${API_URL}${user.avatar_url}`;
+                    document.getElementById('profile-avatar').src = `${user.avatar_url}`;
                     document.getElementById('profile-avatar').style.display = 'block';
                     document.getElementById('profile-initial').style.display = 'none';
                 } else {
@@ -133,8 +130,8 @@
         async function loadFollowStats() {
             try {
                 const [followersResp, followingResp] = await Promise.all([
-                    fetch(`${API_URL}/users/${userId}/followers`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch(`${API_URL}/users/${userId}/following`, { headers: { 'Authorization': `Bearer ${token}` } })
+                    fetch(`/users/${userId}/followers`, { headers: {} }),
+                    fetch(`/users/${userId}/following`, { headers: {} })
                 ]);
 
                 const followers = followersResp.ok ? await followersResp.json() : [];
@@ -173,8 +170,7 @@
 
         async function loadPosts() {
             try {
-                const response = await fetch(`${API_URL}/users/${userId}/posts`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/users/${userId}/posts`, {
                 });
                 const posts = await response.json();
                 displayPosts(posts);
@@ -196,9 +192,9 @@
                         <span class="post-date">${formatDate(post.created_at)}</span>
                     </div>
                     <p class="post-content">${escapeHtml(post.content)}</p>
-                    ${post.media_url ? (isVideo(post.media_url) 
-                        ? `<video controls class="post-media"><source src="${API_URL}${post.media_url}"></video>`
-                        : `<img src="${API_URL}${post.media_url}" class="post-media">`) : ''}
+                    ${post.media_url ? (isVideo(post.media_url)
+                        ? `<video controls class="post-media"><source src="${post.media_url}"></video>`
+                        : `<img src="${post.media_url}" class="post-media">`) : ''}
                 </article>
             `).join('');
         }
@@ -210,9 +206,8 @@
         document.getElementById('follow-btn').addEventListener('click', async () => {
             try {
                 const method = isFollowing ? 'DELETE' : 'POST';
-                const resp = await fetch(`${API_URL}/users/${userId}/follow`, {
+                const resp = await fetch(`/users/${userId}/follow`, {
                     method,
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!resp.ok) throw new Error('Failed to update follow');
                 isFollowing = !isFollowing;
@@ -240,16 +235,15 @@
             return div.innerHTML;
         }
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('accessToken');
-            window.location.href = '/';
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            const response = await fetch('/logout', { method: 'POST' });
+            if (response.ok) window.location.href = '/';
         });
 
         // Notification and message badge polling
         async function updateBadges() {
             try {
-                const notifResponse = await fetch(`${API_URL}/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const notifResponse = await fetch(`/notifications`, {
                 });
                 const notifications = await notifResponse.json();
                 const unreadCount = notifications.filter(n => !n.read_status).length;
@@ -261,14 +255,13 @@
                     notifBadge.style.display = 'none';
                 }
 
-                const convResponse = await fetch(`${API_URL}/messages/conversations`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const convResponse = await fetch(`/messages/conversations`, {
                 });
                 const conversations = await convResponse.json();
                 const unreadInboxes = new Set();
                 conversations.forEach(conv => {
                     if (conv.unread_count && conv.unread_count > 0) {
-                        unreadInboxes.add(conv.user_id);
+                        unreadInboxes.add(conv.other_user_id);
                     }
                 });
                 const messageBadge = document.getElementById('message-badge');

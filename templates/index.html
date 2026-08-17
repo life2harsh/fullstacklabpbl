@@ -73,7 +73,6 @@
     </div>
 
     <script>
-        const API_URL = '';
 
         const tabBtns = document.querySelectorAll('.tab-btn');
         const indicator = document.querySelector('.tab-indicator');
@@ -103,7 +102,7 @@
                 formData.append('username', username);
                 formData.append('password', password);
 
-                const response = await fetch(`${API_URL}/login`, {
+                const response = await fetch(`/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: formData
@@ -115,8 +114,6 @@
                 }
 
                 const data = await response.json();
-                localStorage.setItem('accessToken', data.access_token);
-
                 document.querySelector('.auth-card').style.animation = 'slideOut 0.5s ease-in-out';
                 setTimeout(() => {
                       window.location.href = '/feed/';
@@ -133,7 +130,7 @@
             const password = document.getElementById('signup-password').value;
 
             try {
-                const response = await fetch(`${API_URL}/signup`, {
+                const response = await fetch(`/signup`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -175,11 +172,6 @@
                 setTimeout(() => notification.remove(), 500);
             }, 4000);
         }
-
-        if (localStorage.getItem('accessToken')) {
-              window.location.href = '/feed/';
-        }
-
         (function() {
             const canvas = document.getElementById('starfield');
             if (!canvas) return;
@@ -217,22 +209,22 @@
                 const speed = 3 + Math.random() * 4;
                 const angle = Math.random() * Math.PI / 3 - Math.PI / 6;
 
-                if (side === 0) { 
+                if (side === 0) {
                     x = Math.random() * W;
                     y = -50;
                     vx = Math.sin(angle) * speed;
                     vy = Math.cos(angle) * speed;
-                } else if (side === 1) { 
+                } else if (side === 1) {
                     x = W + 50;
                     y = Math.random() * H;
                     vx = -Math.cos(angle) * speed;
                     vy = Math.sin(angle) * speed;
-                } else if (side === 2) { 
+                } else if (side === 2) {
                     x = Math.random() * W;
                     y = H + 50;
                     vx = Math.sin(angle) * speed;
                     vy = -Math.cos(angle) * speed;
-                } else { 
+                } else {
                     x = -50;
                     y = Math.random() * H;
                     vx = Math.cos(angle) * speed;
@@ -336,7 +328,7 @@
 
             setTimeout(() => {
                 logo.classList.add('fade');
-            }, 3100); 
+            }, 3100);
 
             setTimeout(() => {
                 overlay.classList.add('fade-out');

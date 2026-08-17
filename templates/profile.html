@@ -36,6 +36,7 @@
                 <span>Alerts</span>
                 <span class="notification-badge" id="notif-badge" style="display: none;">0</span>
             </a>
+            <a href="/reports/activity/" class="nav-item"><span>Activity Report</span></a>
         </nav>
 
         <div class="sidebar-footer">
@@ -135,14 +136,11 @@
     </div>
 
     <script>
-        const API_URL = '';
-        const token = localStorage.getItem('accessToken') || ''; 
         let currentUser = null;
 
         async function loadUserInfo() {
             try {
-                const response = await fetch(`${API_URL}/users/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/users/me`, {
                 });
                 currentUser = await response.json();
 
@@ -150,7 +148,7 @@
                 document.getElementById('profile-email').textContent = currentUser.email;
 
                 if (currentUser.avatar_url) {
-                    document.getElementById('profile-avatar').src = `${API_URL}${currentUser.avatar_url}`;
+                    document.getElementById('profile-avatar').src = `${currentUser.avatar_url}`;
                     document.getElementById('profile-avatar').style.display = 'block';
                     document.getElementById('profile-initial').style.display = 'none';
                 } else {
@@ -166,8 +164,7 @@
 
         async function loadPosts() {
             try {
-                const response = await fetch(`${API_URL}/users/${currentUser.id}/posts`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/users/${currentUser.id}/posts`, {
                 });
                 const posts = await response.json();
                 displayPosts(posts);
@@ -189,9 +186,9 @@
                         <span class="post-date">${formatDate(post.created_at)}</span>
                     </div>
                     <p class="post-content">${escapeHtml(post.content)}</p>
-                    ${post.media_url ? (isVideo(post.media_url) 
-                        ? `<video controls class="post-media"><source src="${API_URL}${post.media_url}"></video>`
-                        : `<img src="${API_URL}${post.media_url}" class="post-media">`) : ''}
+                    ${post.media_url ? (isVideo(post.media_url)
+                        ? `<video controls class="post-media"><source src="${post.media_url}"></video>`
+                        : `<img src="${post.media_url}" class="post-media">`) : ''}
                 </article>
             `).join('');
         }
@@ -230,10 +227,9 @@
             const newPassword = document.getElementById('new-password').value;
 
             try {
-                const response = await fetch(`${API_URL}/users/me/change-password`, {
+                const response = await fetch(`/users/me/change-password`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
@@ -265,12 +261,10 @@
         document.getElementById('confirm-delete-btn').addEventListener('click', async () => {
             if (!confirm('Are you sure you want to permanently delete your account?')) return;
             try {
-                const response = await fetch(`${API_URL}/users/me`, {
+                const response = await fetch(`/users/me`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error('Failed to delete account');
-                localStorage.removeItem('accessToken');
                 window.location.href = '/';
             } catch (error) {
                 alert('Error: ' + error.message);
@@ -284,10 +278,9 @@
 
             try {
                 if (username !== currentUser.username) {
-                    const response = await fetch(`${API_URL}/users/me`, {
+                    const response = await fetch(`/users/me`, {
                         method: 'PUT',
                         headers: {
-                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({ username })
@@ -299,10 +292,9 @@
                     const formData = new FormData();
                     formData.append('avatar', avatarFile);
 
-                    const response = await fetch(`${API_URL}/users/me/avatar`, {
+                    const response = await fetch(`/users/me/avatar`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${token}`
                         },
                         body: formData
                     });
@@ -334,16 +326,15 @@
             return div.innerHTML;
         }
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('accessToken');
-            window.location.href = '/';
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            const response = await fetch('/logout', { method: 'POST' });
+            if (response.ok) window.location.href = '/';
         });
 
         // Notification and message badge polling
         async function updateBadges() {
             try {
-                const notifResponse = await fetch(`${API_URL}/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const notifResponse = await fetch(`/notifications`, {
                 });
                 const notifications = await notifResponse.json();
                 const unreadCount = notifications.filter(n => !n.read_status).length;
@@ -355,14 +346,13 @@
                     notifBadge.style.display = 'none';
                 }
 
-                const convResponse = await fetch(`${API_URL}/messages/conversations`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const convResponse = await fetch(`/messages/conversations`, {
                 });
                 const conversations = await convResponse.json();
                 const unreadInboxes = new Set();
                 conversations.forEach(conv => {
                     if (conv.unread_count && conv.unread_count > 0) {
-                        unreadInboxes.add(conv.user_id);
+                        unreadInboxes.add(conv.other_user_id);
                     }
                 });
                 const messageBadge = document.getElementById('message-badge');

@@ -8,10 +8,12 @@
         {{ form.as_p }}
         <button class="btn-secondary" type="submit">Apply report options</button>
     </form>
+    {% with query=request.GET.urlencode %}
     <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
-        <a class="btn-primary" href="{% url 'activity-csv' %}">Download CSV</a>
-        <a class="btn-primary" href="{% url 'activity-pdf' %}">Download PDF report</a>
+        <a class="btn-primary" href="{% url 'activity-csv' %}{% if query %}?{{ query }}{% endif %}">Download CSV</a>
+        <a class="btn-primary" href="{% url 'activity-pdf' %}{% if query %}?{{ query }}{% endif %}">Download PDF report</a>
         <a class="btn-secondary" href="{% url 'feed' %}">Back to feed</a>
     </div>
+    {% endwith %}
 </main>
 {% endblock %}

@@ -35,6 +35,7 @@
                 </svg>
                 <span>Alerts</span>
             </a>
+            <a href="/reports/activity/" class="nav-item"><span>Activity Report</span></a>
         </nav>
 
         <div class="sidebar-footer">
@@ -60,19 +61,16 @@
     </main>
 
     <script>
-        const API_URL = '';
-        const token = localStorage.getItem('accessToken') || ''; 
 
         async function loadNotifications() {
             try {
-                const response = await fetch(`${API_URL}/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/notifications`, {
                 });
                 const notifications = await response.json();
                 displayNotifications(notifications);
             } catch (error) {
                 console.error('Error loading notifications:', error);
-                document.getElementById('notifications-container').innerHTML = 
+                document.getElementById('notifications-container').innerHTML =
                     '<p class="empty-state">Failed to load notifications</p>';
             }
         }
@@ -99,9 +97,8 @@
         async function handleNotificationClick(notifId, type, postId, fromUserId) {
 
             try {
-                await fetch(`${API_URL}/notifications/${notifId}/read`, {
+                await fetch(`/notifications/${notifId}/read`, {
                     method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
             } catch (error) {
                 console.error('Error marking as read:', error);
@@ -123,9 +120,8 @@
 
         async function markAsRead(notifId) {
             try {
-                await fetch(`${API_URL}/notifications/${notifId}/read`, {
+                await fetch(`/notifications/${notifId}/read`, {
                     method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 await loadNotifications();
             } catch (error) {
@@ -135,9 +131,8 @@
 
         document.getElementById('mark-all-read').addEventListener('click', async () => {
             try {
-                await fetch(`${API_URL}/notifications/read-all`, {
+                await fetch(`/notifications/read-all`, {
                     method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 await loadNotifications();
             } catch (error) {
@@ -168,21 +163,20 @@
             return div.innerHTML;
         }
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('accessToken');
-            window.location.href = '/';
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            const response = await fetch('/logout', { method: 'POST' });
+            if (response.ok) window.location.href = '/';
         });
 
         async function updateMessageBadge() {
             try {
-                const convResponse = await fetch(`${API_URL}/messages/conversations`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const convResponse = await fetch(`/messages/conversations`, {
                 });
                 const conversations = await convResponse.json();
                 const unreadInboxes = new Set();
                 conversations.forEach(conv => {
                     if (conv.unread_count && conv.unread_count > 0) {
-                        unreadInboxes.add(conv.user_id);
+                        unreadInboxes.add(conv.other_user_id);
                     }
                 });
                 const messageBadge = document.getElementById('message-badge');

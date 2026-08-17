@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Feed | Vortex{% endblock %}
 {% block content %}
-    
+
     <aside class="sidebar">
         <div class="sidebar-header">
             <div class="logo-text">VORTEX</div>
@@ -37,6 +37,7 @@
                 <span>Alerts</span>
                 <span class="notification-badge" id="notif-badge" style="display: none;">0</span>
             </a>
+            <a href="/reports/activity/" class="nav-item"><span>Activity Report</span></a>
         </nav>
 
         <div class="sidebar-footer">
@@ -59,7 +60,7 @@
         </div>
     </aside>
 
-    
+
     <main class="main-content">
         <div class="top-bar">
             <div class="search-container">
@@ -92,7 +93,7 @@
         </div>
     </main>
 
-    
+
     <div class="modal" id="create-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -121,14 +122,11 @@
     </div>
 
     <script>
-        const API_URL = '';
-        const token = localStorage.getItem('accessToken') || ''; 
         let currentUser = null;
 
         async function loadUserInfo() {
             try {
-                const response = await fetch(`${API_URL}/users/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/users/me`, {
                 });
                 currentUser = await response.json();
 
@@ -136,7 +134,7 @@
                 const sidebarAvatar = document.getElementById('sidebar-avatar');
 
                 if (currentUser.avatar_url) {
-                    sidebarAvatar.innerHTML = `<img src="${API_URL}${currentUser.avatar_url}" alt="Avatar">`;
+                    sidebarAvatar.innerHTML = `<img src="${currentUser.avatar_url}" alt="Avatar">`;
                 } else {
                     document.getElementById('sidebar-initial').textContent = initial;
                 }
@@ -145,15 +143,13 @@
                 loadPosts();
             } catch (error) {
                 console.error('Error loading user:', error);
-                localStorage.removeItem('accessToken');
                 window.location.href = '/';
             }
         }
 
         async function loadPosts(searchQuery = '') {
             try {
-                const response = await fetch(`${API_URL}/posts?search=${encodeURIComponent(searchQuery)}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/posts?search=${encodeURIComponent(searchQuery)}`, {
                 });
 
                 if (!response.ok) {
@@ -191,12 +187,12 @@
                     <div class="post-header">
                         <div class="post-author">
                             <div class="avatar small">
-                                ${post.author_avatar_url 
-                                    ? `<img src="${API_URL}${post.author_avatar_url}" alt="Avatar">` 
+                                ${post.author_avatar_url
+                                    ? `<img src="${post.author_avatar_url}" alt="Avatar">`
                                     : `<span>${post.author_username.charAt(0).toUpperCase()}</span>`}
                             </div>
                             <div class="author-info">
-                                <a href='/public-profile/?id=${post.user_id}" class="author-name" onclick="event.stopPropagation()">${escapeHtml(post.author_username)}</a>
+                                <a href="/public-profile/?id=${post.user_id}" class="author-name" onclick="event.stopPropagation()">${escapeHtml(post.author_username)}</a>
                                 <span class="post-date">${formatDate(post.created_at)}</span>
                             </div>
                         </div>
@@ -204,7 +200,7 @@
                     <div class="post-body">
                         <h3 class="post-title">${escapeHtml(post.title)}</h3>
                         <p class="post-preview">${escapeHtml(post.content.substring(0, 200))}${post.content.length > 200 ? '...' : ''}</p>
-                        ${post.media_url ? `<img src="${API_URL}${escapeHtml(post.media_url)}" style="width: 100%; border-radius: 8px; margin-top: 1rem; max-height: 300px; object-fit: cover;">` : ''}
+                        ${post.media_url ? `<img src="${escapeHtml(post.media_url)}" style="width: 100%; border-radius: 8px; margin-top: 1rem; max-height: 300px; object-fit: cover;">` : ''}
                         <div class="post-actions" onclick="event.stopPropagation()">
                             <button class="post-action-btn" onclick="toggleLike(event, ${post.id})">
                                 <span class="post-action-icon">♥</span>
@@ -233,15 +229,13 @@
             event.stopPropagation();
             try {
                 const method = 'POST';
-                const response = await fetch(`${API_URL}/posts/${postId}/like`, {
+                const response = await fetch(`/posts/${postId}/like`, {
                     method,
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) {
                     // If already liked, try unlike
-                    const unresp = await fetch(`${API_URL}/posts/${postId}/like`, {
+                    const unresp = await fetch(`/posts/${postId}/like`, {
                         method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (!unresp.ok) throw new Error('Failed to like/unlike');
                 }
@@ -261,9 +255,8 @@
 
             try {
                 const method = isBookmarked ? 'DELETE' : 'POST';
-                const response = await fetch(`${API_URL}/posts/${postId}/bookmark`, {
+                const response = await fetch(`/posts/${postId}/bookmark`, {
                     method,
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error('Failed to bookmark/unbookmark');
 
@@ -309,8 +302,7 @@
             }
 
             try {
-                const response = await fetch(`${API_URL}/bookmarks`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/bookmarks`, {
                 });
                 if (!response.ok) throw new Error('Failed to load bookmarks');
                 const posts = await response.json();
@@ -339,10 +331,9 @@
                     formData.append('media', mediaFile);
                 }
 
-                const response = await fetch(`${API_URL}/posts`, {
+                const response = await fetch(`/posts`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`
                     },
                     body: formData
                 });
@@ -370,17 +361,16 @@
             return div.innerHTML;
         }
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('accessToken');
-            window.location.href = '/';
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            const response = await fetch('/logout', { method: 'POST' });
+            if (response.ok) window.location.href = '/';
         });
 
         // Notification and message badge polling
         async function updateBadges() {
             try {
                 // Update notification badge
-                const notifResponse = await fetch(`${API_URL}/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const notifResponse = await fetch(`/notifications`, {
                 });
                 const notifications = await notifResponse.json();
                 const unreadCount = notifications.filter(n => !n.read_status).length;
@@ -393,14 +383,13 @@
                 }
 
                 // Update message badge (unique inboxes with unread messages)
-                const convResponse = await fetch(`${API_URL}/messages/conversations`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const convResponse = await fetch(`/messages/conversations`, {
                 });
                 const conversations = await convResponse.json();
                 const unreadInboxes = new Set();
                 conversations.forEach(conv => {
                     if (conv.unread_count && conv.unread_count > 0) {
-                        unreadInboxes.add(conv.user_id);
+                        unreadInboxes.add(conv.other_user_id);
                     }
                 });
                 const messageBadge = document.getElementById('message-badge');

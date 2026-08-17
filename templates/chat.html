@@ -36,6 +36,7 @@
                 <span>Alerts</span>
                 <span class="notification-badge" id="notif-badge" style="display: none;">0</span>
             </a>
+            <a href="/reports/activity/" class="nav-item"><span>Activity Report</span></a>
         </nav>
 
         <div class="sidebar-footer">
@@ -223,8 +224,6 @@
     </div>
 
     <script>
-        const API_URL = '';
-        const token = localStorage.getItem('accessToken') || ''; 
         let currentUser = null;
         let lastMessageCount = 0;
         let isSendingMessage = false;
@@ -234,8 +233,7 @@
 
         async function loadUserInfo() {
             try {
-                const response = await fetch(`${API_URL}/users/me`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/users/me`, {
                 });
                 currentUser = await response.json();
 
@@ -243,7 +241,7 @@
                 const sidebarAvatar = document.getElementById('sidebar-avatar');
 
                 if (currentUser.avatar_url) {
-                    sidebarAvatar.innerHTML = `<img src="${API_URL}${currentUser.avatar_url}" alt="${currentUser.username}">`;
+                    sidebarAvatar.innerHTML = `<img src="${currentUser.avatar_url}" alt="${currentUser.username}">`;
                 } else {
                     sidebarAvatar.innerHTML = `<span id="sidebar-initial">${initial}</span>`;
                 }
@@ -252,7 +250,6 @@
                 loadConversations();
             } catch (error) {
                 console.error('Error loading user:', error);
-                localStorage.removeItem('accessToken');
                 window.location.href = '/';
             }
         }
@@ -263,8 +260,7 @@
 
             if (targetUserId) {
                 try {
-                    const response = await fetch(`${API_URL}/users/${targetUserId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                    const response = await fetch(`/users/${targetUserId}`, {
                     });
                     if (!response.ok) throw new Error('User not found');
                     const user = await response.json();
@@ -278,8 +274,7 @@
 
         async function loadConversations() {
             try {
-                const response = await fetch(`${API_URL}/messages/conversations`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/messages/conversations`, {
                 });
                 conversations = await response.json();
                 displayConversations(conversations);
@@ -303,18 +298,18 @@
             container.innerHTML = convs.map(conv => {
                 const initial = conv.username.charAt(0).toUpperCase();
                 return `
-                    <div class="conversation-item ${conv.other_user_id === currentConversationId ? 'active' : ''}" 
+                    <div class="conversation-item ${conv.other_user_id === currentConversationId ? 'active' : ''}"
                          onclick="openConversation(${conv.other_user_id}, '${escapeHtml(conv.username)}', '${conv.avatar_url || ''}')">
                         <div class="avatar small">
-                            ${conv.avatar_url 
-                                ? `<img src="${API_URL}${conv.avatar_url}" alt="Avatar">` 
+                            ${conv.avatar_url
+                                ? `<img src="${conv.avatar_url}" alt="Avatar">`
                                 : `<span>${initial}</span>`}
                         </div>
                         <div class="conversation-info">
                             <div class="conversation-header">
                                 <span class="conversation-name">${escapeHtml(conv.username)}</span>
-                                ${conv.unread_count > 0 
-                                    ? `<span class="badge" style="background:var(--noir-white); color:black; padding:2px 6px; border-radius:10px; font-size:0.7rem; font-weight:bold;">${conv.unread_count}</span>` 
+                                ${conv.unread_count > 0
+                                    ? `<span class="badge" style="background:var(--noir-white); color:black; padding:2px 6px; border-radius:10px; font-size:0.7rem; font-weight:bold;">${conv.unread_count}</span>`
                                     : ''}
                             </div>
                             ${conv.last_message ? `<p class="last-message" style="${conv.unread_count > 0 ? 'color: white; font-weight: bold;' : ''}">${escapeHtml(conv.last_message.substring(0, 40))}...</p>` : ''}
@@ -343,7 +338,7 @@
             chatAvatar.innerHTML = '';
             if (avatarUrl && avatarUrl !== 'null' && avatarUrl !== '') {
                 const img = document.createElement('img');
-                img.src = `${API_URL}${avatarUrl}`;
+                img.src = `${avatarUrl}`;
                 img.alt = username;
                 chatAvatar.appendChild(img);
             } else {
@@ -369,8 +364,7 @@
 
         async function loadMessages(userId, force = false) {
             try {
-                const response = await fetch(`${API_URL}/messages/${userId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/messages/${userId}`, {
                 });
                 const messages = await response.json();
 
@@ -388,7 +382,7 @@
             container.innerHTML = messages.map(msg => {
                 let mediaHtml = '';
                 if (msg.media_url) {
-                    const mediaUrl = `${API_URL}${msg.media_url}`;
+                    const mediaUrl = `${msg.media_url}`;
                     if (isVideo(msg.media_url)) {
                         mediaHtml = `<video controls style="max-width: 300px; border-radius: 8px; margin-top: 0.5rem;">
                             <source src="${mediaUrl}" type="video/mp4">
@@ -399,7 +393,7 @@
                 }
                 const isMine = msg.sender_id === currentUser.id;
                 const hasMedia = !!msg.media_url;
-                
+
                 const menuHtml = `
                     <div class="message-actions">
                         <button class="message-menu-btn" onclick="toggleMessageMenu(event, ${msg.id})">
@@ -501,10 +495,9 @@
             const newText = await showEditMessage(msgId, currentText);
             if (newText && newText.trim()) {
                 try {
-                    const response = await fetch(`${API_URL}/messages/${msgId}`, {
+                    const response = await fetch(`/messages/${msgId}`, {
                         method: 'PUT',
                         headers: {
-                            'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({ message: newText.trim() })
@@ -521,9 +514,8 @@
             const confirmed = await showConfirm('Delete message', 'Delete this message?');
             if (!confirmed) return;
             try {
-                const response = await fetch(`${API_URL}/messages/${msgId}`, {
+                const response = await fetch(`/messages/${msgId}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error('Failed to delete message');
                 await loadMessages(currentConversationId, true);
@@ -557,14 +549,14 @@
         document.getElementById('message-input').addEventListener('paste', function(e) {
             const items = e.clipboardData?.items;
             if (!items) return;
-            
+
             for (let item of items) {
                 if (item.type.indexOf('image') !== -1) {
                     e.preventDefault();
-                    
+
                     const blob = item.getAsFile();
                     if (!blob) continue;
-                    
+
                     selectedMediaFile = blob;
 
                     const preview = document.getElementById('media-preview');
@@ -587,7 +579,7 @@
         document.getElementById('message-media').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
-            
+
             selectedMediaFile = file;
             const preview = document.getElementById('media-preview');
             const previewImg = document.getElementById('preview-image');
@@ -609,7 +601,7 @@
         document.getElementById('remove-preview').addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             selectedMediaFile = null;
             document.getElementById('message-media').value = '';
             document.getElementById('media-preview').style.display = 'none';
@@ -638,15 +630,14 @@
                 if (selectedMediaFile) {
                     formData.append('media', selectedMediaFile);
                 }
-                
-                const response = await fetch(`${API_URL}/messages`, {
+
+                const response = await fetch(`/messages`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`
                     },
                     body: formData
                 });
-                
+
                 if (!response.ok) {
                     throw new Error('Failed to send message');
                 }
@@ -658,7 +649,7 @@
                 document.getElementById('message-media').value = '';
                 const preview = document.getElementById('media-preview');
                 if (preview) preview.style.display = 'none';
-                
+
                 await loadMessages(currentConversationId, true);
                 loadConversations();
 
@@ -728,8 +719,7 @@
                     document.getElementById('users-list').innerHTML = '<div class="empty-state"><p>Type to search for users...</p></div>';
                     return;
                 }
-                const response = await fetch(`${API_URL}/users/mentionable?q=${encodeURIComponent(query)}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/users/mentionable?q=${encodeURIComponent(query)}`, {
                 });
                 if (!response.ok) {
                     throw new Error(`Search failed: ${response.status}`);
@@ -757,8 +747,8 @@
                 return `
                     <div class="user-item" onclick="startConversation(${user.id}, '${escapeHtml(user.username)}', '${user.avatar_url || ''}')">
                         <div class="avatar small">
-                            ${user.avatar_url 
-                                ? `<img src="${API_URL}${user.avatar_url}" alt="Avatar">` 
+                            ${user.avatar_url
+                                ? `<img src="${user.avatar_url}" alt="Avatar">`
                                 : `<span>${initial}</span>`}
                         </div>
                         <span class="user-name">${escapeHtml(user.username)}</span>
@@ -798,9 +788,8 @@
             const confirmed = await showConfirm('Clear conversation', 'Delete this conversation? This cannot be undone.');
             if (!confirmed) return;
             try {
-                const response = await fetch(`${API_URL}/messages/conversation/${userId}`, {
+                const response = await fetch(`/messages/conversation/${userId}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error('Failed to clear conversation');
                 await loadConversations();
@@ -820,9 +809,9 @@
             }
         });
 
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            localStorage.removeItem('accessToken');
-            window.location.href = '/';
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            const response = await fetch('/logout', { method: 'POST' });
+            if (response.ok) window.location.href = '/';
         });
 
         let lastNotificationCheck = new Date();
@@ -830,8 +819,7 @@
 
         async function checkNewMessages() {
             try {
-                const response = await fetch(`${API_URL}/messages/conversations`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const response = await fetch(`/messages/conversations`, {
                 });
                 const convs = await response.json();
 
@@ -840,7 +828,7 @@
                         const msgTime = new Date(conv.last_message_time);
                         const notifKey = `${conv.other_user_id}-${conv.last_message_time}`;
 
-                        if (msgTime > lastNotificationCheck && 
+                        if (msgTime > lastNotificationCheck &&
                             !shownNotifications.has(notifKey) &&
                             conv.other_user_id !== currentConversationId &&
                             conv.last_message_sender_id !== currentUser.id) {
@@ -868,7 +856,7 @@
 
             const avatarElement = document.querySelector('.notification-avatar');
             if (avatarUrl) {
-                avatarElement.innerHTML = `<img src="${API_URL}${avatarUrl}" alt="${sender}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+                avatarElement.innerHTML = `<img src="${avatarUrl}" alt="${sender}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
             } else {
                 avatarElement.innerHTML = `<span id="notif-initial">${initial}</span>`;
             }
@@ -891,8 +879,7 @@
 
         async function updateBadges() {
             try {
-                const notifResponse = await fetch(`${API_URL}/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const notifResponse = await fetch(`/notifications`, {
                 });
                 const notifications = await notifResponse.json();
                 const unreadCount = notifications.filter(n => !n.read_status).length;

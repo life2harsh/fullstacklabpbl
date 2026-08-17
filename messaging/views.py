@@ -75,6 +75,7 @@ def conversations(request):
             "avatar_url": other.profile.avatar.url if other.profile.avatar else None,
             "last_message_time": last.timestamp.isoformat() if last else None,
             "last_message": last.message if last else None,
+            "last_message_sender_id": last.sender_id if last else None,
             "unread_count": conversation.messages.filter(read_status=False).exclude(sender=request.user).count(),
         })
     return JsonResponse(result, safe=False)

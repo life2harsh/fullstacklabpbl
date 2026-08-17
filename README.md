@@ -9,8 +9,8 @@ Small communities need one place to publish updates, discover people, have conve
 ## Features
 
 - Registration, login, logout, password hashing, sessions, protected routes, and ownership checks
-- Feed, post detail, profiles, profile editing, media uploads, comments, nested replies, mentions, likes, reposts, bookmarks, follows, blocking, notifications, and messaging
-- Poll and poll-vote models with Django ORM relationships
+- Feed, post detail, profiles, profile editing, media uploads, comments, nested replies, mentions, likes, bookmarks, follows, notifications, and messaging
+- Repost, blocking, poll, and moderation-report support through Django ORM endpoints and Admin; the primary demo UI focuses on the core social workflow
 - AJAX/fetch actions with Django CSRF protection and asynchronous `/search/?q=...`
 - Django Admin for users/profiles, posts/comments, interactions, messages, notifications, polls, and moderation reports
 - User activity CSV export and dynamically generated PDF activity report
@@ -69,9 +69,9 @@ Then run `python manage.py migrate` again. Never commit `.env` or production sec
 ## Demonstration guide
 
 1. Register two users and log in; open `/admin/` with the superuser.
-2. Create, edit, delete, like, bookmark, repost, and comment on a post. Try a nested reply and an `@mention`.
+2. Create, edit, delete, like, bookmark, and comment on a post. Try a nested reply and an `@mention`.
 3. Search from the feed or call `/search/?q=django`; results are returned by an ORM-backed JSON view without a full page refresh.
-4. Follow/block another user, send messages, and mark notifications read.
+4. Follow another user, send messages, and mark notifications read. Repost, blocking, poll, and moderation records are available through their Django endpoints/Admin workflow.
 5. Open `/reports/activity/` and download CSV and PDF exports generated from database data.
 6. Review submitted moderation reports in Django Admin or the staff-only `/moderation/` page.
 
