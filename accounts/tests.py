@@ -1,7 +1,7 @@
 import json
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import Client, TestCase
 
 from accounts.models import Follow
 from interactions.models import Like
@@ -23,6 +23,18 @@ class VortexWorkflowTests(TestCase):
         response = self.client.post("/signup", data=json.dumps({"username": "new-user", "email": "new@example.com", "password": "strong-pass-123"}), content_type="application/json")
         self.assertEqual(response.status_code, 201)
         self.assertTrue(self.client.session.get("_auth_user_id"))
+
+    def test_registration_works_with_django_csrf_protection(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.get("/")
+        csrf_token = csrf_client.cookies["csrftoken"].value
+        response = csrf_client.post(
+            "/signup",
+            data=json.dumps({"username": "csrf-user", "email": "csrf@example.com", "password": "strong-pass-123"}),
+            content_type="application/json",
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
+        self.assertEqual(response.status_code, 201)
 
     def test_protected_route_and_post_crud_permissions(self):
         self.assertEqual(self.client.get("/posts").status_code, 302)
