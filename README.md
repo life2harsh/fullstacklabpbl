@@ -46,7 +46,11 @@ The application uses function-based Django views, app-level URL modules, Django 
 git clone https://github.com/life2harsh/fullstacklabpbl
 cd vortex
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\\Scripts\\activate
+# Bash/Zsh:
+source .venv/bin/activate
+# Fish:
+source .venv/bin/activate.fish
+# Windows PowerShell: .venv\\Scripts\\Activate.ps1
 python -m pip install -r requirements.txt
 cp .env.example .env
 python manage.py migrate
