@@ -1,0 +1,14 @@
+<div class="post-actions">
+    <button type="button" class="post-action-btn{% if post.is_liked %} active{% endif %}" data-toggle="{% url 'like-post' post.pk %}" title="Like">
+        <span class="post-action-icon">♥</span><span data-count>{{ post.like_count }}</span>
+    </button>
+    <a class="post-action-btn" href="{{ post.get_absolute_url }}#comments" title="Comments">
+        <span class="post-action-icon">✉</span><span>{{ post.comment_count }}</span>
+    </a>
+    <button type="button" class="post-action-btn{% if post.is_reposted %} active{% endif %}" data-toggle="{% url 'repost-post' post.pk %}" title="Repost">
+        <span class="post-action-icon">⟳</span><span data-count>{{ post.repost_count }}</span>
+    </button>
+    <button type="button" class="post-action-btn{% if post.is_bookmarked %} active{% endif %}" data-toggle="{% url 'bookmark-post' post.pk %}" title="Bookmark">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16l-7-4-7 4V4z"/></svg>
+    </button>
+</div>

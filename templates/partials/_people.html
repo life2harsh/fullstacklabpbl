@@ -1,0 +1,11 @@
+{% load vortex %}
+<div class="people-columns">
+    <section>
+        <h3 class="section-title">Followers</h3>
+        {% for person in followers %}<a class="person-chip" href="{% url 'public-profile-page' person.pk %}">{% avatar person "small" %}<span>{{ person.username }}</span></a>{% empty %}<p class="muted">No followers yet.</p>{% endfor %}
+    </section>
+    <section>
+        <h3 class="section-title">Following</h3>
+        {% for person in following %}<a class="person-chip" href="{% url 'public-profile-page' person.pk %}">{% avatar person "small" %}<span>{{ person.username }}</span></a>{% empty %}<p class="muted">Not following anyone.</p>{% endfor %}
+    </section>
+</div>

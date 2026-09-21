@@ -1,0 +1,21 @@
+{% load vortex %}
+{% if people %}
+<section class="people-strip">
+    {% for person in people %}<a class="person-chip" href="{% url 'public-profile-page' person.pk %}">{% avatar person "small" %}<span>{{ person.username }}</span></a>{% endfor %}
+</section>
+{% endif %}
+{% for post in page %}
+    {% include "partials/_post_card.html" %}
+{% empty %}
+<div class="empty-state">
+    <h3>{% if query %}Nothing matches “{{ query }}”{% elif view == "following" %}Follow people to fill this feed{% elif view == "bookmarks" %}No bookmarks yet{% else %}No posts yet{% endif %}</h3>
+    <p>{% if query %}Try a different search.{% else %}Be the first to share something.{% endif %}</p>
+</div>
+{% endfor %}
+{% if page.has_other_pages %}
+<nav class="pager">
+    {% if page.has_previous %}<a class="btn-secondary small" href="?{% querystring page=page.previous_page_number %}">← Newer</a>{% endif %}
+    <span>Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+    {% if page.has_next %}<a class="btn-secondary small" href="?{% querystring page=page.next_page_number %}">Older →</a>{% endif %}
+</nav>
+{% endif %}

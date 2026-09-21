@@ -16,6 +16,11 @@ class Profile(models.Model):
     def __str__(self):
         return f"Profile: {self.user.username}"
 
+    def get_absolute_url(self):
+        from django.urls import reverse
+
+        return reverse("public-profile-page", args=[self.user_id])
+
 
 class Follow(models.Model):
     follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name="following_links")

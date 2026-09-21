@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+{% block title %}Analytics | Vortex{% endblock %}
+{% block main %}
+<header class="page-header">
+    <h1>Platform analytics</h1>
+    <div class="row-actions">
+        <a class="btn-secondary small" href="{% url 'analytics-csv' %}{% if query %}?{{ query }}{% endif %}">CSV</a>
+        <a class="btn-secondary small" href="{% url 'analytics-pdf' %}{% if query %}?{{ query }}{% endif %}">PDF</a>
+    </div>
+</header>
+<form method="get" class="panel inline-form">
+    {% include "partials/_form_fields.html" %}
+    <button class="btn-secondary small">Update</button>
+</form>
+
+<div class="stat-grid">
+    {% for label, value in totals.items %}<div class="stat"><span class="stat-value">{{ value }}</span><span class="muted">{{ label }}</span></div>{% endfor %}
+</div>
+
+<h2 class="section-title">Posts per day · {{ start|date:"M j" }} – {{ end|date:"M j, Y" }}</h2>
+<div class="panel bar-chart">
+    {% for row in daily %}
+    <div class="bar-row" title="{{ row.posts }} posts, {{ row.comments }} comments">
+        <span class="muted">{{ row.day|date:"M j" }}</span>
+        <div class="bar"><div style="width: {% widthratio row.posts peak 100 %}%"></div></div>
+        <span>{{ row.posts }}</span>
+    </div>
+    {% empty %}<p class="muted">No posts in this period.</p>{% endfor %}
+</div>
+
+<div class="people-columns">
+    <section>
+        <h2 class="section-title">Top authors</h2>
+        <table class="data-table">
+            <thead><tr><th>Author</th><th>Posts</th><th>Likes</th></tr></thead>
+            <tbody>{% for author in top_authors %}<tr><td><a href="{% url 'public-profile-page' author.pk %}">{{ author.username }}</a></td><td>{{ author.post_total }}</td><td>{{ author.like_total }}</td></tr>{% empty %}<tr><td colspan="3" class="muted">No data.</td></tr>{% endfor %}</tbody>
+        </table>
+    </section>
+    <section>
+        <h2 class="section-title">Reports by reason</h2>
+        <table class="data-table">
+            <thead><tr><th>Reason</th><th>Reports</th></tr></thead>
+            <tbody>{% for row in report_reasons %}<tr><td>{{ row.reason|capfirst }}</td><td>{{ row.n }}</td></tr>{% empty %}<tr><td colspan="2" class="muted">No reports.</td></tr>{% endfor %}</tbody>
+        </table>
+    </section>
+</div>
+
+<h2 class="section-title">Most engaging posts</h2>
+<table class="data-table">
+    <thead><tr><th>Post</th><th>Author</th><th>Likes</th><th>Comments</th><th>Score</th></tr></thead>
+    <tbody>{% for post in top_posts %}<tr><td><a href="{{ post.get_absolute_url }}">{{ post.title|truncatechars:50 }}</a></td><td>{{ post.author.username }}</td><td>{{ post.like_count }}</td><td>{{ post.comment_count }}</td><td>{{ post.score }}</td></tr>{% empty %}<tr><td colspan="5" class="muted">No posts.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% load vortex %}
+<article class="post-card" data-href="{{ post.get_absolute_url }}">
+    <div class="post-header">
+        <div class="post-author">
+            {% avatar post.author "small" %}
+            <div class="author-info">
+                <a href="{% url 'public-profile-page' post.author_id %}" class="author-name">{{ post.author.username }}</a>
+                <span class="post-date" title="{{ post.created_at }}">{{ post.created_at|timesince }} ago</span>
+            </div>
+        </div>
+        {% if post.poll %}<span class="tag">Poll</span>{% endif %}
+    </div>
+    <div class="post-body">
+        <h3 class="post-title">{{ post.title }}</h3>
+        <p class="post-preview">{{ post.content|truncatechars:220 }}</p>
+        {% if post.media %}<img class="post-media" src="{{ post.media.url }}" alt="" loading="lazy">{% endif %}
+        {% include "partials/_post_actions.html" %}
+    </div>
+</article>

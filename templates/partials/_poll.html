@@ -1,0 +1,19 @@
+<div class="poll">
+    <h4>{{ poll.question }}</h4>
+    {% if poll_results.has_voted %}
+        {% for option in poll_results.options %}
+        <div class="poll-row{% if option.chosen %} chosen{% endif %}">
+            <div class="poll-bar" style="width: {{ option.percent }}%"></div>
+            <span>{{ option.text }}{% if option.chosen %} ✓{% endif %}</span><span>{{ option.percent }}% · {{ option.vote_count }}</span>
+        </div>
+        {% endfor %}
+        <small class="muted">{{ poll_results.total }} vote{{ poll_results.total|pluralize }}</small>
+    {% endif %}
+    <details{% if not poll_results.has_voted %} open{% endif %}>
+        <summary>{% if poll_results.has_voted %}Change your vote{% else %}Cast your vote{% endif %}</summary>
+        <form method="post" action="{% url 'vote-poll' poll.pk %}">{% csrf_token %}
+            {% for radio in vote_form.option %}<label class="poll-option">{{ radio.tag }} {{ radio.choice_label }}</label>{% endfor %}
+            <button class="btn-primary small">Vote</button>
+        </form>
+    </details>
+</div>

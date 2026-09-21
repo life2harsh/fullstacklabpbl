@@ -1,0 +1,8 @@
+<details class="report">
+    <summary>Report</summary>
+    <form method="post" action="{% url 'report-target' kind target.pk %}">{% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        {% include "partials/_form_fields.html" with form=report_form %}
+        <button class="btn-secondary small">Submit report</button>
+    </form>
+</details>

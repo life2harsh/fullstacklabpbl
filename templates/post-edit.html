@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %}Edit post | Vortex{% endblock %}
+{% block main %}
+<a href="{{ post.get_absolute_url }}" class="back-link">← Back to post</a>
+<section class="panel">
+    <h1>Edit post</h1>
+    <form method="post" enctype="multipart/form-data">{% csrf_token %}
+        {% include "partials/_form_fields.html" %}
+        <div class="row-actions">
+            <a class="btn-secondary" href="{{ post.get_absolute_url }}">Cancel</a>
+            <button class="btn-primary">Save changes</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

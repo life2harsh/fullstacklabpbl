@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block body %}
+    {% include "partials/_sidebar.html" %}
+    <main class="main-content">{% block main %}{% endblock %}</main>
+    {% block scripts %}{% endblock %}
+{% endblock %}

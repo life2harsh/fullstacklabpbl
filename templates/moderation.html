@@ -1,13 +1,42 @@
-{% extends "base.html" %}
+{% extends "layout.html" %}
 {% block title %}Moderation | Vortex{% endblock %}
-{% block content %}
-<main class="main-content" style="max-width:1000px;margin:2rem auto;padding:2rem;">
+{% block main %}
+<header class="page-header">
     <h1>Moderation queue</h1>
-    <p>Review reports from the Django Admin or this staff-only queue.</p>
-    <div class="feed-container">
+    <form method="get" class="inline-form">{{ form.status }}{{ form.kind }}<button class="btn-secondary small">Filter</button></form>
+</header>
+<div class="feed-container">
     {% for report in reports %}
-        <article class="post-card"><strong>{{ report.get_report_type_display }}</strong> · {{ report.reason }}<br><small>Reported by {{ report.reporter.username }} · {{ report.created_at }}</small><p>{{ report.details }}</p></article>
-    {% empty %}<p class="empty-state">No reports to review.</p>{% endfor %}
-    </div>
-</main>
+    <article class="panel report-card status-{{ report.status }}">
+        <div class="report-head">
+            <span class="tag">{{ report.content_type.model }}</span>
+            <strong>{{ report.get_reason_display }}</strong>
+            <span class="tag">{{ report.get_status_display }}</span>
+            <span class="muted">by {{ report.reporter.username }} · {{ report.created_at|timesince }} ago</span>
+        </div>
+        <div class="report-target">
+            {% with target=report.target %}
+            {% if not target %}<em class="muted">Target no longer exists.</em>
+            {% elif report.content_type.model == "post" %}<a href="{{ target.get_absolute_url }}">{{ target.title }}</a> — {{ target.content|truncatechars:160 }}
+            {% elif report.content_type.model == "comment" %}<a href="{{ target.post.get_absolute_url }}#comment-{{ target.pk }}">Comment by {{ target.author.username }}</a> — {{ target.content|truncatechars:160 }}
+            {% else %}<a href="{% url 'public-profile-page' target.pk %}">@{{ target.username }}</a>{% if not target.is_active %} (deactivated){% endif %}
+            {% endif %}
+            {% endwith %}
+        </div>
+        {% if report.details %}<p class="muted">“{{ report.details }}”</p>{% endif %}
+        {% if report.status == "pending" %}
+        <div class="row-actions">
+            {% for action, label in actions %}
+            <form method="post" action="{% url 'moderate' report.pk action %}"{% if action == "remove" %} data-confirm="Remove this content for everyone?"{% endif %}>{% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button class="{% if action == 'remove' %}btn-danger{% else %}btn-secondary{% endif %} small">{{ label }}</button>
+            </form>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </article>
+    {% empty %}
+    <div class="empty-state"><h3>Queue is empty</h3><p>No reports match this filter.</p></div>
+    {% endfor %}
+</div>
 {% endblock %}

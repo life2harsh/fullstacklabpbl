@@ -1,19 +1,26 @@
-{% extends "base.html" %}
-{% block title %}Activity Reports | Vortex{% endblock %}
-{% block content %}
-<main class="main-content" style="max-width:760px;margin:3rem auto;padding:2rem;">
-    <h1>Activity reports</h1>
-    <p>Download your real Vortex activity as portable CSV or PDF reports.</p>
-    <form method="get" style="margin-top:1.5rem;max-width:360px;">
-        {{ form.as_p }}
-        <button class="btn-secondary" type="submit">Apply report options</button>
+{% extends "layout.html" %}
+{% block title %}My activity | Vortex{% endblock %}
+{% block main %}
+<header class="page-header"><h1>My activity</h1></header>
+<section class="panel">
+    <form method="get" class="inline-form">
+        {% include "partials/_form_fields.html" %}
+        <button class="btn-secondary small">Apply</button>
     </form>
-    {% with query=request.GET.urlencode %}
-    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:2rem;">
-        <a class="btn-primary" href="{% url 'activity-csv' %}{% if query %}?{{ query }}{% endif %}">Download CSV</a>
-        <a class="btn-primary" href="{% url 'activity-pdf' %}{% if query %}?{{ query }}{% endif %}">Download PDF report</a>
-        <a class="btn-secondary" href="{% url 'feed' %}">Back to feed</a>
+    <div class="row-actions">
+        <a class="btn-primary small" href="{% url 'activity-csv' %}{% if query %}?{{ query }}{% endif %}">Download CSV</a>
+        <a class="btn-primary small" href="{% url 'activity-pdf' %}{% if query %}?{{ query }}{% endif %}">Download PDF</a>
     </div>
-    {% endwith %}
-</main>
+</section>
+<h2 class="section-title">Top posts — last {{ days }} days</h2>
+<table class="data-table">
+    <thead><tr><th>Post</th><th>Likes</th>{% if include_comments %}<th>Comments</th>{% endif %}<th>Reposts</th><th>Score</th></tr></thead>
+    <tbody>
+    {% for post in posts %}
+        <tr><td><a href="{{ post.get_absolute_url }}">{{ post.title|truncatechars:50 }}</a></td><td>{{ post.like_count }}</td>{% if include_comments %}<td>{{ post.comment_count }}</td>{% endif %}<td>{{ post.repost_count }}</td><td>{{ post.score }}</td></tr>
+    {% empty %}
+        <tr><td colspan="5" class="muted">No posts in this period.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
 {% endblock %}

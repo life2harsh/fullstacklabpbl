@@ -1,5 +1,3 @@
-import json
-
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -7,6 +5,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.shortcuts import render
 from django.views.decorators.http import require_http_methods
+
+from core.utils import avatar_url, json_body
 
 from .models import Conversation, ConversationParticipant, Message
 
@@ -24,7 +24,7 @@ def _conversation_for(first, second, create=True):
 
 @login_required
 def chat_page(request):
-    return render(request, "chat.html")
+    return render(request, "chat.html", {"me": {"id": request.user.id, "username": request.user.username}})
 
 
 def _message_payload(message):
@@ -38,13 +38,6 @@ def _message_payload(message):
         "read_status": message.read_status,
         "sender_username": message.sender.username,
     }
-
-
-def _body(request):
-    try:
-        return json.loads(request.body or "{}")
-    except json.JSONDecodeError:
-        return request.POST.dict()
 
 
 @login_required
@@ -64,15 +57,15 @@ def send_message(request):
 @login_required
 def conversations(request):
     result = []
-    for conversation in Conversation.objects.filter(participants=request.user).prefetch_related("participants", "messages"):
-        other = conversation.participants.exclude(pk=request.user.pk).first()
+    for conversation in Conversation.objects.filter(participants=request.user).prefetch_related("participants__profile"):
+        other = next((user for user in conversation.participants.all() if user.pk != request.user.pk), None)
         if not other:
             continue
         last = conversation.messages.select_related("sender").order_by("-timestamp").first()
         result.append({
             "other_user_id": other.id,
             "username": other.username,
-            "avatar_url": other.profile.avatar.url if other.profile.avatar else None,
+            "avatar_url": avatar_url(other),
             "last_message_time": last.timestamp.isoformat() if last else None,
             "last_message": last.message if last else None,
             "last_message_sender_id": last.sender_id if last else None,
@@ -113,7 +106,7 @@ def message_detail(request, message_id):
     if request.method == "DELETE":
         message.delete()
         return JsonResponse({"message": "Message deleted successfully"})
-    data = _body(request)
+    data = json_body(request)
     message.message = data.get("message", message.message)
     message.save(update_fields=["message"])
     return JsonResponse(_message_payload(message))

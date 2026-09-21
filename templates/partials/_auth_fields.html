@@ -1,0 +1,7 @@
+{% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+{% for field in form %}
+<div class="input-group{% if field.errors %} has-error{% endif %}">
+    {{ field.label_tag }}{{ field }}
+    {{ field.errors }}
+</div>
+{% endfor %}
