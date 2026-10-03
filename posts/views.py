@@ -30,7 +30,7 @@ def notify_mentions(text, actor, post=None, comment=None):
 
 
 def _feed(request, view, query):
-    posts = Post.objects.visible_to(request.user).search(query).with_stats(request.user).select_related("poll")
+    posts = Post.objects.visible_to(request.user).search(query).with_stats(request.user).select_related("poll").order_by("-created_at")
     if view == "following":
         posts = posts.filter(Q(author__follower_links__follower=request.user) | Q(author=request.user))
     elif view == "bookmarks":

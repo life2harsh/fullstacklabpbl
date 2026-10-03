@@ -62,12 +62,18 @@ class Comment(models.Model):
     class Meta:
         ordering = ["created_at"]
 
+    def __str__(self):
+        return f"{self.author.username}: {self.content[:40]}"
+
 
 class Poll(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name="poll")
     question = models.CharField(max_length=500)
     expires_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.question
 
     def results(self, user=None):
         options = list(self.options.annotate(vote_count=Count("votes")))
@@ -82,6 +88,9 @@ class Poll(models.Model):
 class PollOption(models.Model):
     poll = models.ForeignKey(Poll, on_delete=models.CASCADE, related_name="options")
     text = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.text
 
 
 class PollVote(models.Model):

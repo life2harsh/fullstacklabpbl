@@ -16,6 +16,7 @@ class CommentForm(forms.ModelForm):
         model = Comment
         fields = ["content", "parent"]
         widgets = {"content": forms.Textarea(attrs={"rows": 3, "placeholder": "Write a comment..."}), "parent": forms.HiddenInput}
+        labels = {"content": ""}
 
     def __init__(self, *args, post=None, **kwargs):
         super().__init__(*args, **kwargs)
