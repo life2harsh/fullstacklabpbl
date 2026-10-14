@@ -33,6 +33,7 @@
             <form id="login-form" class="auth-form{% if tab == 'login' %} active{% endif %}" method="post" action="{% url 'login' %}">{% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.GET.next }}">
                 {% include "partials/_auth_fields.html" with form=login_form %}
+                <a class="auth-link" href="{% url 'password_reset' %}">Forgot password?</a>
                 <button type="submit" class="btn-primary"><span>Sign In</span><svg class="btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
             </form>
 
