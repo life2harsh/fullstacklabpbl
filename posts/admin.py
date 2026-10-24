@@ -1,8 +1,9 @@
 from django.contrib import admin
+from django.db.models import Count
 
 from reports.exports import csv_response
 
-from .models import Comment, Mention, Poll, PollOption, PollVote, Post
+from .models import Comment, Mention, Poll, PollOption, PollVote, Post, Tag
 
 
 class CommentInline(admin.TabularInline):
@@ -22,7 +23,8 @@ class PollOptionInline(admin.TabularInline):
 class PostAdmin(admin.ModelAdmin):
     list_display = ["title", "author", "like_count", "comment_count", "created_at"]
     search_fields = ["title", "content", "author__username"]
-    list_filter = ["created_at"]
+    list_filter = ["created_at", "tags"]
+    filter_horizontal = ["tags"]
     date_hierarchy = "created_at"
     inlines = [CommentInline]
     actions = ["export_csv"]
@@ -60,6 +62,19 @@ class PollAdmin(admin.ModelAdmin):
 @admin.register(PollVote)
 class PollVoteAdmin(admin.ModelAdmin):
     list_display = ["voter", "poll", "option", "created_at"]
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ["name", "post_count"]
+    search_fields = ["name"]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(post_count=Count("posts"))
+
+    @admin.display(ordering="post_count")
+    def post_count(self, tag):
+        return tag.post_count
 
 
 admin.site.register(Mention)

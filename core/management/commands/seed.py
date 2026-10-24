@@ -1,3 +1,4 @@
+import os
 import random
 from datetime import timedelta
 
@@ -16,18 +17,18 @@ from posts.models import Comment, Poll, PollVote, Post
 
 PEOPLE = [("aarav", "Aarav Mehta"), ("diya", "Diya Sharma"), ("kabir", "Kabir Singh"), ("meera", "Meera Iyer"), ("rohan", "Rohan Das"), ("sana", "Sana Khan"), ("vikram", "Vikram Rao"), ("zoya", "Zoya Ali")]
 TOPICS = [
-    ("Django ORM tricks I wish I knew earlier", "annotate() and Exists() turned a 200-query feed into 7 queries. Profile before you optimise!"),
-    ("Template inheritance is underrated", "One base.html, a layout and a few partials. Every page got shorter and consistent."),
-    ("Campus hackathon this weekend", "Looking for a frontend person for our team. Ping me if you're interested."),
-    ("Best chai near the library?", "Need a study spot that serves decent chai and has working wifi."),
-    ("ModelForms save so much time", "Validation, error messages and saving in a handful of lines."),
-    ("Finally deployed my first app", "Gunicorn + whitenoise + a cheap VPS. Took two evenings but it works."),
-    ("Reading list for the semester", "Two Scoops of Django, Designing Data-Intensive Applications, and the Django docs (seriously)."),
-    ("Exam timetable is out", "DBMS on Monday, Full Stack on Wednesday. Good luck everyone."),
-    ("Why CSRF tokens matter", "Without them any site could post to your account while you are logged in."),
+    ("Django ORM tricks I wish I knew earlier", "annotate() and Exists() turned a 200-query feed into 7 queries. Profile before you optimise! #django #orm"),
+    ("Template inheritance is underrated", "One base.html, a layout and a few partials. Every page got shorter and consistent. #django #templates"),
+    ("Campus hackathon this weekend", "Looking for a frontend person for our team. Ping me if you're interested. #hackathon #campus"),
+    ("Best chai near the library?", "Need a study spot that serves decent chai and has working wifi. #campus"),
+    ("ModelForms save so much time", "Validation, error messages and saving in a handful of lines. #django #forms"),
+    ("Finally deployed my first app", "Daphne + whitenoise + a cheap VPS. Took two evenings but it works. #deploy #django"),
+    ("Reading list for the semester", "Two Scoops of Django, Designing Data-Intensive Applications, and the Django docs (seriously). #books"),
+    ("Exam timetable is out", "DBMS on Monday, Full Stack on Wednesday. Good luck everyone. #exams #campus"),
+    ("Why CSRF tokens matter", "Without them any site could post to your account while you are logged in. #security"),
     ("Weekend trek photos coming soon", "Sunrise at the top was worth the 4am start."),
-    ("Dark mode or light mode?", "The eternal debate. I am firmly on the dark side."),
-    ("Pagination done right", "Paginator + get_page() handles invalid page numbers for you."),
+    ("Dark mode or light mode?", "The eternal debate. I am firmly on the dark side. #design"),
+    ("Pagination done right", "Paginator + get_page() handles invalid page numbers for you. #django"),
 ]
 COMMENTS = ["Totally agree!", "This is really helpful, thanks.", "Saving this for later.", "Can you share more details?", "Ha, same here.", "Great point.", "I had the same problem last week."]
 
@@ -43,6 +44,9 @@ class Command(BaseCommand):
         rng = random.Random(42)
         if flush:
             User.objects.filter(is_staff=False).delete()
+        elif Post.objects.filter(author__username=PEOPLE[0][0]).exists():
+            self.stdout.write("Demo data already present; use --flush to reseed.")
+            return
         users = []
         for username, name in PEOPLE:
             user, created = User.objects.get_or_create(username=username, defaults={"email": f"{username}@vortex.test"})
@@ -55,13 +59,14 @@ class Command(BaseCommand):
             users.append(user)
         admin, created = User.objects.get_or_create(username="admin", defaults={"email": "admin@vortex.test", "is_staff": True, "is_superuser": True})
         if created:
-            admin.set_password("vortex-admin-123")
+            admin.set_password(os.getenv("SEED_ADMIN_PASSWORD", "vortex-admin-123"))
             admin.save()
 
         now = timezone.now()
         posts = []
         for index, (title, content) in enumerate(TOPICS):
             post = Post.objects.create(author=users[index % len(users)], title=title, content=content)
+            post.sync_tags()
             Post.objects.filter(pk=post.pk).update(created_at=now - timedelta(days=rng.randint(0, 25), hours=rng.randint(0, 23)))
             posts.append(post)
 

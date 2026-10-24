@@ -17,6 +17,13 @@
     {% for key, label in views.items %}<a href="?view={{ key }}" class="tab{% if key == view %} active{% endif %}">{{ label }}</a>{% endfor %}
 </nav>
 
+{% if trending_tags or tag %}
+<div class="tag-strip">
+    {% for trending in trending_tags %}<a href="?tag={{ trending.name }}" class="tag-chip{% if trending.name == tag %} active{% endif %}">#{{ trending.name }}<span>{{ trending.post_count }}</span></a>{% endfor %}
+    {% if tag %}<a href="?" class="tag-chip active">#{{ tag }} ×</a>{% endif %}
+</div>
+{% endif %}
+
 <div id="feed-container" class="feed-container">{% include "partials/_feed_results.html" %}</div>
 
 <div class="modal{% if compose_open %} active{% endif %}" id="create-modal">

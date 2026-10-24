@@ -103,6 +103,17 @@ a { color: inherit; }
 .toast.success { border-color: #15803d; }
 .toast.error { border-color: #b91c1c; }
 .auth-form .errorlist, .auth-form .form-errors { text-align: left; }
+.auth-container.visible { opacity: 1; }
+.auth-link { display: block; margin: .75rem 0 0; font-size: .85rem; color: rgba(255,255,255,.6); text-align: center; }
+.auth-link:hover { color: #fff; }
+.auth-note { color: rgba(255,255,255,.75); line-height: 1.5; margin-bottom: 1rem; text-align: center; }
+.hashtag { color: var(--noir-white); font-weight: 600; text-decoration: none; }
+.hashtag:hover { text-decoration: underline; }
+.tag-strip { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.25rem; }
+.tag-chip { padding: .3rem .75rem; border: 1px solid var(--border-subtle); border-radius: 999px; color: var(--noir-muted); text-decoration: none; font-size: .85rem; }
+.tag-chip span { opacity: .6; margin-left: .25rem; }
+.tag-chip:hover, .tag-chip.active { color: var(--noir-white); border-color: var(--noir-white); }
+
 @media (max-width: 768px) {
     .main-content { margin-left: 0; padding: 1rem; }
     .sidebar { position: static; width: 100%; height: auto; }

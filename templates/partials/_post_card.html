@@ -12,7 +12,7 @@
     </div>
     <div class="post-body">
         <h3 class="post-title">{{ post.title }}</h3>
-        <p class="post-preview">{{ post.content|truncatechars:220 }}</p>
+        <p class="post-preview">{{ post.content|truncatechars:220|hashtags }}</p>
         {% if post.media %}<img class="post-media" src="{{ post.media.url }}" alt="" loading="lazy">{% endif %}
         {% include "partials/_post_actions.html" %}
     </div>

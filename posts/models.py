@@ -1,6 +1,13 @@
+import re
+from datetime import timedelta
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Count, Exists, OuterRef, Q, Value
+from django.urls import reverse
+from django.utils import timezone
+
+HASHTAG = re.compile(r"(?<![&\w])#(\w{1,50})")
 
 
 class PostQuerySet(models.QuerySet):
@@ -28,11 +35,27 @@ class PostQuerySet(models.QuerySet):
         return self.filter(Q(title__icontains=query) | Q(content__icontains=query) | Q(author__username__icontains=query)) if query else self
 
 
+class Tag(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return f"#{self.name}"
+
+    def get_absolute_url(self):
+        return f"{reverse('feed')}?tag={self.name}"
+
+    @classmethod
+    def trending(cls, days=7, limit=8):
+        recent = Q(posts__created_at__gte=timezone.now() - timedelta(days=days))
+        return cls.objects.annotate(post_count=Count("posts", filter=recent)).filter(post_count__gt=0).order_by("-post_count", "name")[:limit]
+
+
 class Post(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="posts")
     title = models.CharField(max_length=255)
     content = models.TextField(max_length=10000)
     media = models.FileField(upload_to="posts/", blank=True, null=True)
+    tags = models.ManyToManyField(Tag, blank=True, related_name="posts")
     repost_of = models.ForeignKey("self", on_delete=models.SET_NULL, blank=True, null=True, related_name="reposts_created")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -47,9 +70,12 @@ class Post(models.Model):
         return self.title
 
     def get_absolute_url(self):
-        from django.urls import reverse
-
         return reverse("post-detail-page", args=[self.pk])
+
+    def sync_tags(self):
+        names = {name.lower() for name in HASHTAG.findall(f"{self.title} {self.content}")}
+        Tag.objects.bulk_create([Tag(name=name) for name in names], ignore_conflicts=True)
+        self.tags.set(Tag.objects.filter(name__in=names))
 
 
 class Comment(models.Model):

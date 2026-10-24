@@ -17,7 +17,7 @@ from moderation.forms import ReportForm
 from notifications.models import Notification
 
 from .forms import CommentForm, PollForm, PollOptionFormSet, PostForm, VoteForm
-from .models import Comment, Mention, Poll, PollVote, Post
+from .models import Comment, Mention, Poll, PollVote, Post, Tag
 
 FEED_VIEWS = {"all": "Latest", "following": "Following", "trending": "Trending", "bookmarks": "Bookmarks"}
 
@@ -29,8 +29,10 @@ def notify_mentions(text, actor, post=None, comment=None):
         Notification.objects.create(recipient=user, actor=actor, type="mention", post=post, comment=comment, message=f"{actor.username} mentioned you")
 
 
-def _feed(request, view, query):
+def _feed(request, view, query, tag):
     posts = Post.objects.visible_to(request.user).search(query).with_stats(request.user).select_related("poll").order_by("-created_at")
+    if tag:
+        posts = posts.filter(tags__name=tag)
     if view == "following":
         posts = posts.filter(Q(author__follower_links__follower=request.user) | Q(author=request.user))
     elif view == "bookmarks":
@@ -57,6 +59,7 @@ def _save_post(request, form, poll_form, options):
         post = form.save(commit=False)
         post.author = request.user
         post.save()
+        post.sync_tags()
         if question:
             poll = poll_form.save(commit=False)
             poll.post = post
@@ -71,6 +74,7 @@ def _save_post(request, form, poll_form, options):
 def feed_page(request):
     view = request.GET.get("view") if request.GET.get("view") in FEED_VIEWS else "all"
     query = request.GET.get("q", "").strip()
+    tag = request.GET.get("tag", "").strip().lower()
     form = PostForm(request.POST or None, request.FILES or None)
     poll_form = PollForm(request.POST or None, prefix="poll")
     options = PollOptionFormSet(request.POST or None, instance=Poll(), prefix="option")
@@ -79,12 +83,14 @@ def feed_page(request):
         if post:
             messages.success(request, "Post published.")
             return redirect(post)
-    page = Paginator(_feed(request, view, query), 10).get_page(request.GET.get("page"))
+    page = Paginator(_feed(request, view, query, tag), 10).get_page(request.GET.get("page"))
     context = {
         "page": page,
         "view": view,
         "views": FEED_VIEWS,
         "query": query,
+        "tag": tag,
+        "trending_tags": Tag.trending(),
         "people": User.objects.filter(Q(username__icontains=query) | Q(profile__full_name__icontains=query), is_active=True).select_related("profile")[:6] if query else [],
         "form": form,
         "poll_form": poll_form,
@@ -143,7 +149,7 @@ def post_edit_page(request, post_id):
         return HttpResponseForbidden("You can only edit your own posts.")
     form = PostForm(request.POST or None, request.FILES or None, instance=post)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        form.save().sync_tags()
         messages.success(request, "Post updated.")
         return redirect(post)
     return render(request, "post-edit.html", {"form": form, "post": post})
