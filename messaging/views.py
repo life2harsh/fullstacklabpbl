@@ -8,6 +8,8 @@ from django.views.decorators.http import require_http_methods
 
 from core.utils import avatar_url, json_body
 
+from .consumers import push
+
 from .models import Conversation, ConversationParticipant, Message
 
 
@@ -25,6 +27,10 @@ def _conversation_for(first, second, create=True):
 @login_required
 def chat_page(request):
     return render(request, "chat.html", {"me": {"id": request.user.id, "username": request.user.username}})
+
+
+def _participants(conversation):
+    return list(conversation.participants.values_list("id", flat=True))
 
 
 def _message_payload(message):
@@ -51,6 +57,8 @@ def send_message(request):
         return JsonResponse({"detail": "Message must contain text or media"}, status=400)
     conversation = _conversation_for(request.user, receiver)
     message = Message.objects.create(conversation=conversation, sender=request.user, message=text, media=media)
+    push([request.user.id, receiver.id], "message", users=[request.user.id, receiver.id], sender_id=request.user.id,
+         sender_username=request.user.username, avatar_url=avatar_url(request.user), preview=text or "Sent an attachment")
     return JsonResponse(_message_payload(message), status=201)
 
 
@@ -94,6 +102,7 @@ def clear_conversation(request, other_user_id):
     conversation = _conversation_for(request.user, other, create=False)
     if conversation:
         conversation.messages.all().delete()
+        push(_participants(conversation), "changed", users=_participants(conversation))
     return JsonResponse({"message": "Conversation cleared successfully"})
 
 
@@ -103,12 +112,14 @@ def message_detail(request, message_id):
     message = get_object_or_404(Message.objects.select_related("sender", "conversation"), pk=message_id)
     if message.sender != request.user:
         return JsonResponse({"detail": "Not authorized"}, status=403)
+    users = _participants(message.conversation)
     if request.method == "DELETE":
         message.delete()
+        push(users, "changed", users=users)
         return JsonResponse({"message": "Message deleted successfully"})
-    data = json_body(request)
-    message.message = data.get("message", message.message)
+    message.message = json_body(request).get("message", message.message)
     message.save(update_fields=["message"])
+    push(users, "changed", users=users)
     return JsonResponse(_message_payload(message))
 
 

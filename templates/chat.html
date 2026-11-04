@@ -60,7 +60,7 @@
                     </div>
                     <div>
                         <h3 id="chat-username">User</h3>
-                        <span class="online-status" style="display:none">Active now</span>
+                        <span class="online-status" id="typing-indicator" hidden>typing…</span>
                     </div>
                 </div>
                 <div style="display: flex; gap: 0.5rem;">
@@ -175,7 +175,42 @@
         let isSendingMessage = false;
         let conversations = [];
         let currentConversationId = null;
-        let messagePollingInterval = null;
+        let socket = null, fallbackPoll = null, lastTypingSent = 0, typingTimer = null;
+
+        function connectSocket() {
+            socket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/chat/`);
+            socket.onopen = () => { clearInterval(fallbackPoll); fallbackPoll = null; };
+            socket.onmessage = (event) => handleSocketEvent(JSON.parse(event.data));
+            socket.onclose = () => {
+                if (!fallbackPoll) fallbackPoll = setInterval(pollOnce, 4000);
+                setTimeout(connectSocket, 5000);
+            };
+        }
+
+        function pollOnce() {
+            if (currentConversationId && !isSendingMessage) loadMessages(currentConversationId);
+            checkNewMessages();
+        }
+
+        function handleSocketEvent(data) {
+            if (data.event === 'typing') {
+                if (data.user !== currentConversationId) return;
+                const indicator = document.getElementById('typing-indicator');
+                indicator.hidden = false;
+                clearTimeout(typingTimer);
+                typingTimer = setTimeout(() => { indicator.hidden = true; }, 3000);
+                return;
+            }
+            const other = data.users.find(id => id !== currentUser.id) ?? currentUser.id;
+            if (other === currentConversationId) {
+                document.getElementById('typing-indicator').hidden = true;
+                loadMessages(other, true);
+            }
+            loadConversations();
+            if (data.event === 'message' && data.sender_id !== currentUser.id && other !== currentConversationId) {
+                showMessageNotification(data.sender_username, data.preview, data.avatar_url, data.sender_id);
+            }
+        }
 
         async function checkUrlParams() {
             const params = new URLSearchParams(window.location.search);
@@ -276,13 +311,7 @@
             await loadMessages(userId, true);
 
             document.getElementById('clear-chat-btn').style.display = 'flex';
-
-            if (messagePollingInterval) clearInterval(messagePollingInterval);
-            messagePollingInterval = setInterval(() => {
-                if (!isSendingMessage) {
-                    loadMessages(userId);
-                }
-            }, 3000);
+            document.getElementById('typing-indicator').hidden = true;
         }
 
         async function loadMessages(userId, force = false) {
@@ -544,8 +573,6 @@
             }
 
             isSendingMessage = true;
-            if (messagePollingInterval) clearInterval(messagePollingInterval);
-
             try {
                 const formData = new FormData();
                 formData.append('receiver_id', currentConversationId);
@@ -575,29 +602,23 @@
 
                 await loadMessages(currentConversationId, true);
                 loadConversations();
-
-                isSendingMessage = false;
-                messagePollingInterval = setInterval(() => {
-                    if (!isSendingMessage) {
-                        loadMessages(currentConversationId);
-                    }
-                }, 3000);
             } catch (error) {
                 console.error('Error sending message:', error);
-                isSendingMessage = false;
-
-                messagePollingInterval = setInterval(() => {
-                    if (!isSendingMessage) {
-                        loadMessages(currentConversationId);
-                    }
-                }, 3000);
             }
+            isSendingMessage = false;
         }
 
         document.getElementById('send-btn').addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
             sendMessage();
+        });
+
+        document.getElementById('message-input').addEventListener('input', () => {
+            if (socket?.readyState === WebSocket.OPEN && currentConversationId && Date.now() - lastTypingSent > 2000) {
+                socket.send(JSON.stringify({ typing: currentConversationId }));
+                lastTypingSent = Date.now();
+            }
         });
 
         document.getElementById('message-input').addEventListener('keypress', function(e) {
@@ -630,7 +651,6 @@
 
         document.getElementById('close-chat-btn').addEventListener('click', () => {
             currentConversationId = null;
-            if (messagePollingInterval) clearInterval(messagePollingInterval);
             document.querySelector('.empty-chat').style.display = 'flex';
             document.getElementById('active-chat').style.display = 'none';
             displayConversations(conversations);
@@ -691,8 +711,7 @@
         }
 
         function formatTime(dateString) {
-            const iso = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
-            const date = new Date(iso);
+            const date = new Date(dateString);
             const hours = date.getHours();
             const minutes = date.getMinutes();
             const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -720,7 +739,6 @@
                 document.getElementById('active-chat').style.display = 'none';
                 document.getElementById('clear-chat-btn').style.display = 'none';
                 currentConversationId = null;
-                if (messagePollingInterval) clearInterval(messagePollingInterval);
             } catch (error) {
                 console.error('Error clearing conversation:', error);
             }
@@ -793,8 +811,7 @@
             }, 5000);
         }
 
-        setInterval(checkNewMessages, 5000);
-
+        connectSocket();
         loadConversations();
         checkUrlParams();
     </script>

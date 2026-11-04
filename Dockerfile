@@ -17,4 +17,4 @@ RUN mkdir -p uploads/avatars uploads/posts uploads/messages
 
 RUN python manage.py collectstatic --noinput
 
-CMD ["sh", "-c", "python manage.py migrate && gunicorn vortex.wsgi:application --bind 0.0.0.0:8000 --workers 2"]
+CMD ["sh", "-c", "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 vortex.asgi:application"]

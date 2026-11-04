@@ -1,7 +1,11 @@
 from datetime import timedelta
 
+from asgiref.sync import sync_to_async
+from channels.testing import WebsocketCommunicator
+
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
+from django.core import mail
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -10,7 +14,8 @@ from accounts.models import Block, Follow
 from interactions.models import Like
 from moderation.models import Report
 from notifications.models import Notification
-from posts.models import Comment, Poll, PollVote, Post
+from posts.models import Comment, Poll, PollVote, Post, Tag
+from vortex.asgi import application
 
 PASSWORD = "strong-pass-123"
 
@@ -69,6 +74,16 @@ class AuthTests(VortexTestCase):
         response = self.client.post("/profile/", {"form": "password", "old_password": PASSWORD, "new_password1": "another-pass-456", "new_password2": "another-pass-456"})
         self.assertRedirects(response, "/profile/")
         self.assertTrue(User.objects.get(pk=self.user.pk).check_password("another-pass-456"))
+
+    def test_password_reset_by_email(self):
+        self.assertRedirects(self.client.post("/password-reset/", {"email": "alice@example.com"}), "/password-reset/sent/")
+        self.assertEqual(len(mail.outbox), 1)
+        link = next(line for line in mail.outbox[0].body.splitlines() if "/reset/" in line).strip()
+        form_url = self.client.get(link).url
+        response = self.client.post(form_url, {"new_password1": "reset-pass-789", "new_password2": "reset-pass-789"})
+        self.assertRedirects(response, "/reset/done/")
+        self.assertTrue(User.objects.get(pk=self.user.pk).check_password("reset-pass-789"))
+        self.assertContains(self.client.get(link), "invalid")
 
 
 class PostTests(VortexTestCase):
@@ -132,7 +147,7 @@ class PostTests(VortexTestCase):
             post = Post.objects.create(author=self.other, title=f"Post {i}", content="body")
             Like.objects.create(user=self.user, post=post)
         self.login()
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(8):
             self.client.get("/feed/")
 
     def test_live_search_returns_partial(self):
@@ -141,6 +156,20 @@ class PostTests(VortexTestCase):
         response = self.client.get("/feed/?q=searchable", HTTP_X_REQUESTED_WITH="fetch")
         self.assertContains(response, "Django ORM tips")
         self.assertNotContains(response, "<html")
+
+    def test_hashtags_link_filter_and_trend(self):
+        post = Post.objects.create(author=self.user, title="Shipping", content="Deployed it #Django #deploy")
+        post.sync_tags()
+        Post.objects.create(author=self.user, title="Untagged", content="nothing here")
+        self.login()
+        self.assertEqual(set(post.tags.values_list("name", flat=True)), {"django", "deploy"})
+        response = self.client.get("/feed/?tag=django")
+        self.assertContains(response, "Shipping")
+        self.assertNotContains(response, "Untagged")
+        self.assertContains(response, 'href="/feed/?tag=django"')
+        self.assertEqual([tag.name for tag in Tag.trending()], ["deploy", "django"])
+        self.client.post(reverse("post-edit", args=[post.pk]), {"title": "Shipping", "content": "Now only #deploy"})
+        self.assertEqual(list(post.tags.values_list("name", flat=True)), ["deploy"])
 
     def test_blocked_authors_hidden(self):
         Post.objects.create(author=self.other, title="Hidden post", content="c")
@@ -214,3 +243,32 @@ class ReportExportTests(VortexTestCase):
         self.assertTrue(self.client.get("/reports/analytics.pdf").content.startswith(b"%PDF"))
         bad = self.client.get("/reports/analytics/?start=2026-02-01&end=2026-01-01")
         self.assertContains(bad, "Start date must be on or before")
+
+
+class RealtimeChatTests(VortexTestCase):
+    async def socket_for(self, user):
+        client = Client()
+        await sync_to_async(client.force_login)(user)
+        communicator = WebsocketCommunicator(application, "/ws/chat/", headers=[
+            (b"cookie", f"sessionid={client.cookies['sessionid'].value}".encode()), (b"origin", b"http://testserver")])
+        connected, _ = await communicator.connect()
+        self.assertTrue(connected)
+        return communicator
+
+    async def test_message_and_typing_are_pushed(self):
+        bob = await self.socket_for(self.other)
+        alice = await self.socket_for(self.user)
+        await sync_to_async(self.client.force_login)(self.user)
+        await sync_to_async(self.client.post)("/messages", {"receiver_id": self.other.id, "message": "hi bob"})
+        event = await bob.receive_json_from(timeout=2)
+        self.assertEqual((event["event"], event["sender_id"], event["preview"]), ("message", self.user.id, "hi bob"))
+        self.assertEqual((await alice.receive_json_from(timeout=2))["event"], "message")
+        await alice.send_json_to({"typing": self.other.id})
+        self.assertEqual(await bob.receive_json_from(timeout=2), {"event": "typing", "user": self.user.id})
+        await alice.disconnect()
+        await bob.disconnect()
+
+    async def test_anonymous_socket_is_rejected(self):
+        communicator = WebsocketCommunicator(application, "/ws/chat/", headers=[(b"origin", b"http://testserver")])
+        connected, _ = await communicator.connect()
+        self.assertFalse(connected)
