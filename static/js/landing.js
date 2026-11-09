@@ -140,8 +140,12 @@
     const logo = document.getElementById('intro-logo');
     const comet = document.getElementById('intro-comet');
     const authContainer = document.getElementById('auth-container');
-    if (!overlay || !logo || !comet || !authContainer) return;
-    if (sessionStorage.getItem('vortex-intro')) { overlay.remove(); return; }
+    if (!authContainer) return;
+    if (!overlay || !logo || !comet || sessionStorage.getItem('vortex-intro')) {
+        overlay?.remove();
+        authContainer.style.opacity = '1';
+        return;
+    }
     sessionStorage.setItem('vortex-intro', '1');
 
     authContainer.style.opacity = '0';

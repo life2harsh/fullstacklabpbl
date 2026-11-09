@@ -114,6 +114,8 @@ a { color: inherit; }
 .tag-chip span { opacity: .6; margin-left: .25rem; }
 .tag-chip:hover, .tag-chip.active { color: var(--noir-white); border-color: var(--noir-white); }
 
+.conversations-panel .search-container, .modal .search-container { flex: none; }
+
 @media (max-width: 768px) {
     .main-content { margin-left: 0; padding: 1rem; }
     .sidebar { position: static; width: 100%; height: auto; }
