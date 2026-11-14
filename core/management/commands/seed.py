@@ -101,4 +101,4 @@ class Command(BaseCommand):
         post_type = ContentType.objects.get_for_model(Post)
         Report.objects.get_or_create(reporter=users[2], content_type=post_type, object_id=posts[3].pk, defaults={"reason": "spam", "details": "Looks like an ad."})
         Report.objects.get_or_create(reporter=users[4], content_type=post_type, object_id=posts[9].pk, defaults={"reason": "other"})
-        self.stdout.write(self.style.SUCCESS(f"Seeded {len(users)} users, {len(posts)} posts. Log in as aarav / vortex-demo-123 or admin / vortex-admin-123."))
+        self.stdout.write(self.style.SUCCESS(f"Seeded {len(users)} users, {len(posts)} posts. Log in as aarav / vortex-demo-123{"" if "SEED_ADMIN_PASSWORD" in os.environ else " or admin / vortex-admin-123"}."))
