@@ -1,0 +1,29 @@
+digraph A {
+graph [rankdir=TB, fontname="Times-Roman", dpi=200, nodesep=0.4, ranksep=0.45, compound=true];
+node [shape=box, style="rounded,filled", fillcolor="#FFFFFF", fontname="Times-Roman", fontsize=11];
+edge [fontname="Times-Roman", fontsize=9, color="#333333"];
+browser [label="Browser\nDTL-rendered HTML + app.js (fetch, live search, toggles)\nchat.html (WebSocket client)", fillcolor="#DCE6F2"];
+daphne [label="Daphne (ASGI server)  +  WhiteNoise (static files)"];
+router [label="ProtocolTypeRouter (vortex/asgi.py)", fillcolor="#F2F2F2"];
+subgraph cluster_http { label="HTTP"; fontname="Times-Roman"; style=dashed;
+  mw [label="Middleware\nsession · CSRF · auth · messages"];
+  urls [label="URLconf\n8 app urls.py"];
+  views [label="Function-based views\nforms · ModelForms · formsets\nlogin_required / staff checks"];
+  tpl [label="Templates\nbase → layout → page + partials\ncontext processor, custom tags"];
+  exp [label="Exports\ncsv · ReportLab PDF"];
+  mw -> urls -> views; views -> tpl; views -> exp;
+}
+subgraph cluster_ws { label="WebSocket"; fontname="Times-Roman"; style=dashed;
+  auth [label="AllowedHostsOriginValidator\nAuthMiddlewareStack"];
+  cons [label="ChatConsumer\n/ws/chat/ · group user-<id>"];
+  auth -> cons;
+}
+layer [label="Channel layer\n(in-memory; Redis for many workers)", fillcolor="#F2F2F2"];
+orm [label="Django ORM\nPostQuerySet.with_stats / visible_to / search", fillcolor="#F2F2F2"];
+db [label="SQLite (dev) / MySQL (DATABASE_URL)", shape=cylinder, fillcolor="#DCE6F2"];
+admin [label="Django Admin\ninlines · actions · CSV"];
+browser -> daphne [dir=both]; daphne -> router;
+router -> mw [lhead=cluster_http, label="http"]; router -> auth [lhead=cluster_ws, label="websocket"];
+views -> layer [label="push(event)"]; layer -> cons [label="group_send"];
+views -> orm; admin -> orm; orm -> db;
+}
